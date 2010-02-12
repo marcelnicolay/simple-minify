@@ -19,10 +19,10 @@ from minify import __version__
  
 setup(
     name = 'minify',
-    version = Version,
+    version = __version__,
     description = "simple-minify is a python script for minify css and javascript files.",
     long_description = """simple-minify is a python script for minify css and javascript files.""",
-    keywords = 'Popen process execution',
+    keywords = 'minify css js',
     author = 'Marcel Nicolay',
     author_email = 'marcel.nicolay@gmail.com',
     url = 'http://www.simple-minify.org',

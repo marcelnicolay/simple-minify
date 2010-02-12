@@ -1,0 +1,10 @@
+setup.py
+minify/__init__.py
+minify/cssmin.py
+minify/exception.py
+minify/group.py
+minify/jsmin.py
+minify.egg-info/PKG-INFO
+minify.egg-info/SOURCES.txt
+minify.egg-info/dependency_links.txt
+minify.egg-info/top_level.txt

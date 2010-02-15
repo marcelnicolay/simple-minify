@@ -37,9 +37,19 @@ class FilterTemplate():
         return "\n".join(lines)
         
     def parse(self, content):
-        re.search("<link.*href\=\"(?P<file>[^\"]*)\"[^>]*>", content).groupdict()
-        
+    
+    	css_files = []
+    
+    	links = re.findall('\<link[^>]*/>',content)
+    	for link in links:
+	    	result = re.search('href="(?P<value>[^"]*)"', link).groupdict()
+	    	if result
+	    		css_files.append(result['value'])
+	    		
+	    		
+	    return css_files
+
+	
             
-    def 
     
     

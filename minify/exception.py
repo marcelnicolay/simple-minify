@@ -17,3 +17,9 @@
 
 class MinifyException(Exception):
     pass
+    
+class FilterTemplateDoesNotExist(Exception):
+    pass
+
+class FileDoesNotExist(Exception):
+    pass

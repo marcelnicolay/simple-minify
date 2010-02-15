@@ -17,7 +17,7 @@
  
 from jsmin import jsmin
 from cssmin import CssMin
-
+from excpetion import FileDoesNotExist
 import os, re, StringIO
 
 class Group():
@@ -41,8 +41,9 @@ class Group():
             
     def read_file(self, file):
         file_path = self.root + file
+
         if not os.path.isfile(file_path):
-            raise Exception()
+            raise FileDoesNotExist("File does not exist %s" % file_path)
         
         f = open(file_path)
         try:
@@ -79,4 +80,4 @@ class Group():
         for file in self.files:
             files_in.append(self.read_file(file))
             
-        return "\n".join(files_in)
+        return "".join(files_in)

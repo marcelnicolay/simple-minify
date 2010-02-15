@@ -36,10 +36,4 @@ class Minify():
         
         for group in self.groups:
             group.process()
-            
-    '''
-    '''
-    def filter_templates(self, path):
-        os.listdir(path)
-        for fname in dirList:
-            
+                        

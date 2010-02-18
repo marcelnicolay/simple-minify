@@ -18,70 +18,53 @@
 import re
 import os
 from minify import Minify
-from exception import FilterTemplateDoesNotExist
+from exception import FilterTemplateDoesNotExist,FileDoesNotExist
 
 class FilterTemplate():
-    
-    
-    '''
-    	FilterTemplate
-    	@template_path
-    	@media_dir
-    	@css_output css path output
-    	@js_output js path output
-    '''
-    def __init__(self, template_path, media_dir, css_output, js_output):
-        self.template_path = template_path
-        self.media_dir = media_dir
-        self.css_output = css_output
-        self.js_output = js_output
-    
-    def read(self, file):
-        if not os.path.isfile(file):
-            raise FilterTemplateDoesNotExist("Template does not exist")
-        
-        f = open(file)
-        try:
-            lines = []
-            for line in f:
-                lines.append(line)
-        finally:
-            f.close()
-        
-        return "".join(lines)
-    
-    def apply(self):
-    	dirlist = os.listdir(self.template_path)
-    	
-    	minify = Minify()
-    	
-        for fname in dirlist:
-        	search = re.search("(?P<name>[^\.]*)\.(?P<extension>.*)$",fname)
-        	if search and search.groupdict()['extension'] == 'tpl':
-				template_file = "%s/%s" % (self.template_path, fname)
 
-         		css_files, js_files = self.filter(template_file)
-	        	
-	        	output_css = "%s/minify/%s.css" % (self.css_output, search.groupdict()['name'])
-	        	output_js = "%s/minify/%s.js" % (self.js_output, search.groupdict()['name'])
-	        	
-        		minify.add_group(files=css_files, output=output_css, root=self.media_dir )
-        		minify.add_group(files=js_files, output=output_js, root=self.media_dir )
 
-	        	self.parse(template_file, output_css, output_js)
-		
-		minify.minimalize()
+	'''
+	FilterTemplate
+	@template_path
+	@media_dir
+	@css_output css path output
+	@js_output js path output
+	
+	FilterTemplate("/home/marcel/workspace/simple-minify", "/home/marcel/workspace/labicyclette/web/public", "/css", "/js", "").run()
+	'''
+	def __init__(self, template_path, media_dir, css_path, js_path, media_url):
+		self.template_path = template_path
+		self.media_dir = media_dir
+		self.css_path = css_path
+		self.js_path = js_path
 
-    def write(self, file, content):
-        f = open(file, "w")
-        try:
-            f.write(content)
-        finally:
-            f.close()
-		
+		self.media_url = media_url
+
+	def read(self, file):
+		if not os.path.isfile(file):
+			raise FilterTemplateDoesNotExist("Template does not exist")
+
+		f = open(file)
+		try:
+			lines = []
+			for line in f:
+				lines.append(line)
+		finally:
+			f.close()
+
+		return "".join(lines)
+
+	def write(self, file, content):
+		f = open(file, "w")
+		try:
+			f.write(content)
+		finally:
+			f.close()
+
 	def filter(self, template_file):
+
 		content = self.read(template_file)
-		
+
 		css_files = []
 		js_files = []
 
@@ -97,16 +80,44 @@ class FilterTemplate():
 			search = re.search('src="(?P<value>[^"]*)"', script)
 			if search:
 				js_files.append(search.groupdict()['value'])
-		
+
 		return css_files, js_files	
 
-	def parse(self, template_file, output_css, output_js):	
-     	content = self.read(template_file)
-     	
-     	content = re.sub("\<link[^>]*/>", "", content)
-     	content = re.sub("\<script[^>]*></script>", "", content)
-     	
-     	content = re.sub("</head>", '<link type="text/css" href="%s" rel="stylesheet" />\n</head>' % output_css, content)
-     	content = re.sub("</body>", '<script type="text/javscript" src="%s" ></script>\n</body>' % output_js, content)
-     	
-     	self.write(template_file, content)
+	def parse(self, template_file, css_url=None, js_url=None):	
+		content = self.read(template_file)
+
+		content = re.sub("\<link[^>]*/>", "", content)
+		content = re.sub("\<script[^>]*></script>", "", content)
+
+		content = re.sub("</head>", '<link type="text/css" href="%s" rel="stylesheet" />\n</head>' % css_url , content)
+		content = re.sub("</body>", '<script type="text/javscript" src="%s" ></script>\n</body>' % js_url , content)
+
+		self.write(template_file, content)
+
+	def run(self):
+		dirlist = os.listdir(self.template_path)
+
+		minify = Minify()
+
+		for fname in dirlist:
+			search = re.search("(?P<name>[^\.]*)\.(?P<extension>.*)$",fname)
+			if search and search.groupdict()['extension'] == 'html':
+				template_file = "%s/%s" % (self.template_path, fname)
+
+				css_files, js_files = self.filter(template_file)
+				
+				if css_files or js_files:
+					if css_files:
+						output_css = "%s/minify/%s.css" % (self.css_path, search.groupdict()['name'])
+						minify.add_group(files=css_files, output=output_css, root=self.media_dir )
+						css_url = "%s%s" % (self.media_url, output_css)
+				
+					if js_files:
+						output_js = "%s/minify/%s.js" % (self.js_path, search.groupdict()['name'])
+						minify.add_group(files=js_files, output=output_js, root=self.media_dir )
+						js_url = "%s%s" % (self.media_url, output_js)
+
+					self.parse(template_file, css_url, js_url)
+
+		minify.minimalize()
+

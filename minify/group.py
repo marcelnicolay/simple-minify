@@ -17,7 +17,7 @@
  
 from jsmin import jsmin
 from cssmin import CssMin
-from excpetion import FileDoesNotExist
+from exception import FileDoesNotExist
 import os, re, StringIO
 
 class Group():

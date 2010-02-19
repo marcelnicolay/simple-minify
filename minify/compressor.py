@@ -64,6 +64,8 @@ class JsCompressor(MinifyCompressor):
         content = jsmin(merged_files)
 
         self.write_file(content, self.media_dir + self.file_output)
+        
+        return self.media_dir + self.file_output
 
 class CssCompressor(MinifyCompressor):
 
@@ -79,3 +81,6 @@ class CssCompressor(MinifyCompressor):
         content = cssm.compress(merged_files)
 
         self.write_file(content, self.media_dir + self.file_output)
+        
+        return self.media_dir + self.file_output
+        

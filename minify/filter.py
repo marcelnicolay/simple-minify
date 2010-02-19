@@ -18,28 +18,29 @@
 import re
 import os
 from compressor import CssCompressor, JsCompressor
-from exception import FilterTemplateDoesNotExist,FileDoesNotExist
+from exception import FilterTemplateDoesNotExist, FileDoesNotExist, MinifyException
 
 class FilterTemplate():
 
 
     '''
     FilterTemplate
+
     @template_path
     @media_dir
     @css_path
     @js_path
-    @media_url
-
-    FilterTemplate("/home/marcel/workspace/simple-minify", "/home/marcel/workspace/labicyclette/web/public", "/css", "/js", "").run()
+    @css_url_base
+    @js_url_base
     '''
-    def __init__(self, template_path, media_dir, css_path, js_path, media_url):
+    def __init__(self, template_path, media_dir, css_path, js_path, css_url_base, js_url_base):
         self.template_path = template_path
         self.media_dir = media_dir
         self.css_path = css_path
         self.js_path = js_path
 
-        self.media_url = media_url
+        self.css_url_base = css_url_base
+        self.js_url_base = js_url_base
 
     def read(self, file):
         if not os.path.isfile(file):
@@ -93,8 +94,10 @@ class FilterTemplate():
         content = self.read(template_file)
 
         # substitui a ultima ocorrencia
-        content = re.sub(css_matchs.pop(), '<link type="text/css" href="%s" rel="stylesheet" />' % css_url, content)
-        content = re.sub(js_matchs.pop(), '<script type="text/javscript" src="%s" ></script>' % js_url, content)
+        if css_matchs:
+            content = re.sub(css_matchs.pop(), '<link type="text/css" href="%s" rel="stylesheet" />' % css_url, content)
+        if js_matchs:
+            content = re.sub(js_matchs.pop(), '<script type="text/javscript" src="%s" ></script>' % js_url, content)
         
         # remove as outras
         for match in css_matchs + js_matchs:
@@ -110,18 +113,22 @@ class FilterTemplate():
             if search and search.groupdict()['extension'] == 'html':
                 template_file = "%s/%s" % (self.template_path, fname)
 
-                css_files, js_files, css_matchs, js_matchs = self.filter(template_file)
+                try:
+                    css_files, js_files, css_matchs, js_matchs = self.filter(template_file)
+                    css_name = ""
+                    js_name = ""
+                    if css_files:
+                        css_name = "/%s.min.css" % search.groupdict()['name']
+                        compress = CssCompressor(files=css_files, file_output=self.css_path + css_name, media_dir=self.media_dir )
+                        compress.run()
 
-                if css_files:
-                    output_css = "%s/%s.min.css" % (self.css_path, search.groupdict()['name'])
-                    compress = CssCompressor(files=css_files, file_output=output_css, media_dir=self.media_dir )
-                    compress.run()
-                    css_url = "%s/%s" % (self.media_url, output_css)
+                    if js_files:
+                        js_name = "/%s.min.js" % search.groupdict()['name']
+                        compress = JsCompressor(files=js_files, file_output=self.js_path + js_name, media_dir=self.media_dir )
+                        compress.run()
 
-                if js_files:
-                    output_js = "%s/%s.min.js" % (self.js_path, search.groupdict()['name'])
-                    compress = JsCompressor(files=js_files, file_output=output_js, media_dir=self.media_dir )
-                    compress.run()
-                    js_url = "%s/%s" % (self.media_url, output_js)
-
-                self.parse(template_file,css_url,js_url, css_matchs, js_matchs)
+                    if css_files or js_files:
+                        self.parse(template_file, self.css_url_base + css_name, self.js_url_base + js_name, css_matchs, js_matchs)
+                except Exception, e:                        
+                    print "template file %s could not be filtered" % template_file
+                    raise e

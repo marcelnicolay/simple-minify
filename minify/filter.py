@@ -17,7 +17,7 @@
 
 import re
 import os
-from minify import Minify
+from minify.compress import CssCompress, JsCompress
 from exception import FilterTemplateDoesNotExist,FileDoesNotExist
 
 class FilterTemplate():
@@ -97,8 +97,6 @@ class FilterTemplate():
 	def run(self):
 		dirlist = os.listdir(self.template_path)
 
-		minify = Minify()
-
 		for fname in dirlist:
 			search = re.search("(?P<name>[^\.]*)\.(?P<extension>.*)$",fname)
 			if search and search.groupdict()['extension'] == 'html':
@@ -106,18 +104,16 @@ class FilterTemplate():
 
 				css_files, js_files = self.filter(template_file)
 				
-				if css_files or js_files:
-					if css_files:
-						output_css = "%s/minify/%s.css" % (self.css_path, search.groupdict()['name'])
-						minify.add_group(files=css_files, output=output_css, root=self.media_dir )
-						css_url = "%s%s" % (self.media_url, output_css)
-				
-					if js_files:
-						output_js = "%s/minify/%s.js" % (self.js_path, search.groupdict()['name'])
-						minify.add_group(files=js_files, output=output_js, root=self.media_dir )
-						js_url = "%s%s" % (self.media_url, output_js)
+				if css_files:
+					output_css = "%s/minify/%s.css" % (self.css_path, search.groupdict()['name'])
+					compress = CssCompress(files=css_files, file_output=output_css, media_dir=self.media_dir )
+					compress.run()
+					css_url = "%s%s" % (self.media_url, output_css)
+			
+				if js_files:
+					output_js = "%s/minify/%s.js" % (self.js_path, search.groupdict()['name'])
+					compress = JsCompress(files=js_files, file_output=output_js, media_dir=self.media_dir )
+					compress.run()
+					js_url = "%s%s" % (self.media_url, output_js)
 
-					self.parse(template_file, css_url, js_url)
-
-		minify.minimalize()
-
+				self.parse(template_file, css_url, js_url)

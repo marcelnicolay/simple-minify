@@ -16,24 +16,3 @@
 # limitations under the License.
  
 __version__ = '0.0.1'
-
-import os
-from group import Group
-
-class Minify():
-    
-    groups = []
-    
-    '''
-    '''
-    def __init__(self):
-        pass
-            
-    def add_group(self, name=None, files=[], output=None, root=None):
-        self.groups.append(Group(name=name, files=files, output=output, root=root))
-
-    def minimalize(self):
-        
-        for group in self.groups:
-            group.process()
-                        

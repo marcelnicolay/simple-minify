@@ -1,0 +1,15 @@
+######################################
+# Python Simple Minify configure     #
+######################################
+
+TEMPLATE_PATH = ./cartola/templates
+MEDIA_DIR = ./
+CSS_PATH = /media/c
+JS_PATH = /media/j
+CSS_URL_BASE = http://<%=img_domain %>/es/ca/<%=static_sufix %>/c
+JS_URL_BASE = http://<%=img_domain %>/es/ca/<%=static_sufix %>/j
+IMG_URL_BASE = http://<%=img_domain %>/es/ca/<%=static_sufix %>/i
+IMG_URL_PATTERN = /media/i
+
+
+

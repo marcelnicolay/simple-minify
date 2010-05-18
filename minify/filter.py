@@ -98,7 +98,7 @@ class FilterTemplate():
         
         for file in files:
             content = self.read(file)
-            content = re.sub("<img src=(?P<plicas>[\"'])%s(?P<img_path>[^\"']*)[\"']" % self.img_url_pattern, "<img src=\g<plicas>%s\g<img_path>\g<plicas>" % self.img_url_base, content)
+            content = re.sub("%s(?P<img_path>[^\.]*\.(gif|jpeg|png|jpg|swf))" % self.img_url_pattern, "%s\g<img_path>" % self.img_url_base, content)
             self.write(file, content)
 
 
@@ -109,17 +109,46 @@ class FilterTemplate():
         if css_matchs:
             content = re.sub(css_matchs.pop(), '<link type="text/css" href="%s" rel="stylesheet" />' % css_url, content)
         if js_matchs:
-            content = re.sub(js_matchs.pop(), '<script type="text/javscript" src="%s" ></script>' % js_url, content)
+            content = re.sub(js_matchs.pop(), '<script type="text/javascript" src="%s" ></script>' % js_url, content)
         
         # remove as outras
         for match in css_matchs + js_matchs:
-                content = re.sub(match, "", content)
+            content = re.sub(match, "", content)
         
         # replace img urls
         if self.img_url_base:
-            content = re.sub("<img src=(?P<plicas>[\"'])%s(?P<img_path>[^\"']*)[\"']" % self.img_url_pattern, "<img src=\g<plicas>%s\g<img_path>\g<plicas>" % self.img_url_base, content)
+            content = re.sub("%s(?P<img_path>[^\.]*\.(gif|jpeg|png|jpg|swf))" % self.img_url_pattern, "%s\g<img_path>" % self.img_url_base, content)
 
-        self.write(template_file+".tmp", content)
+        self.write(template_file, content)
+
+    def preg_file(self, fname):
+        css = ""
+        js = ""
+        
+        search = re.search("(?P<name>[^\.]*)\.(?P<extension>.*)$",fname)
+        if search and search.groupdict()['extension'] == 'html':
+            template_file = "%s/%s" % (self.template_path, fname)
+            print "\tparsing %s" % template_file
+            try:
+                css_files, js_files, css_matchs, js_matchs = self.filter(template_file)
+                css_name = ""
+                js_name = ""
+                if css_files:
+                    css_name = "/%s.min.css" % search.groupdict()['name']
+                    compress = CssCompressor(files=css_files, file_output=self.css_path + css_name, media_dir=self.media_dir )
+                    css = compress.run()
+
+                if js_files:
+                    js_name = "/%s.min.js" % search.groupdict()['name']
+                    compress = JsCompressor(files=js_files, file_output=self.js_path + js_name, media_dir=self.media_dir )
+                    js = compress.run()
+
+                self.parse(template_file, self.css_url_base + css_name, self.js_url_base + js_name, css_matchs, js_matchs)
+            except Exception, e:                        
+                print "template file %s could not be filtered" % template_file
+                raise e
+
+        return css, js
 
     def run(self):
         dirlist = os.listdir(self.template_path)
@@ -128,29 +157,17 @@ class FilterTemplate():
         js_compressed = []
 
         for fname in dirlist:
-            search = re.search("(?P<name>[^\.]*)\.(?P<extension>.*)$",fname)
-            if search and search.groupdict()['extension'] == 'html':
-                template_file = "%s/%s" % (self.template_path, fname)
-
-                try:
-                    css_files, js_files, css_matchs, js_matchs = self.filter(template_file)
-                    css_name = ""
-                    js_name = ""
-                    if css_files:
-                        css_name = "/%s.min.css" % search.groupdict()['name']
-                        compress = CssCompressor(files=css_files, file_output=self.css_path + css_name, media_dir=self.media_dir )
-                        css_compressed.append(compress.run())
-
-                    if js_files:
-                        js_name = "/%s.min.js" % search.groupdict()['name']
-                        compress = JsCompressor(files=js_files, file_output=self.js_path + js_name, media_dir=self.media_dir )
-                        js_compressed.append(compress.run())
-
-                    if css_files or js_files:
-                        self.parse(template_file, self.css_url_base + css_name, self.js_url_base + js_name, css_matchs, js_matchs)
-                except Exception, e:                        
-                    print "template file %s could not be filtered" % template_file
-                    raise e
+            if os.path.isdir("%s/%s" % (self.template_path,fname)):
+                
+                for fsubname in os.listdir("%s/%s" % (self.template_path,fname)):
+                    filename = "%s/%s" % (fname, fsubname)
+                    css, js = self.preg_file(filename)
+                    if css: css_compressed.append(css)
+                    if js: js_compressed.append(js)
+            else:
+                css, js = self.preg_file(fname)
+                if css: css_compressed.append(css)
+                if js: js_compressed.append(js)
         
         # filter img css and js
         if self.img_url_base:

@@ -62,7 +62,8 @@ class JsCompressor(MinifyCompressor):
         merged_files = self.get_merged_files()
         
         content = jsmin(merged_files)
-
+        #content = merged_files
+        
         self.write_file(content, self.media_dir + self.file_output)
         
         return self.media_dir + self.file_output
